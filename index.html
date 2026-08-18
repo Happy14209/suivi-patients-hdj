@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Suivi HDJ">
+<meta name="theme-color" content="#2f6f5e">
+<title>Suivi Patients HDJ</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Écran de chargement -->
+<section id="screen-loading" class="screen active">
+  <div class="loading-spinner"></div>
+</section>
+
+<!-- Écran de création du code PIN (premier lancement) -->
+<section id="screen-setup-pin" class="screen">
+  <div class="centered-box">
+    <h1>Bienvenue</h1>
+    <p class="muted">Créez un code PIN pour protéger l'accès à vos données patients. Ce code reste uniquement sur cet appareil.</p>
+    <form id="form-setup-pin">
+      <label for="setup-pin-1">Code PIN (4 à 8 chiffres)</label>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" id="setup-pin-1" required minlength="4" maxlength="8" autocomplete="new-password">
+      <label for="setup-pin-2">Confirmez le code PIN</label>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" id="setup-pin-2" required minlength="4" maxlength="8" autocomplete="new-password">
+      <p class="error-message" id="setup-pin-error"></p>
+      <button type="submit" class="btn-primary">Créer le code PIN</button>
+    </form>
+  </div>
+</section>
+
+<!-- Écran de verrouillage -->
+<section id="screen-lock" class="screen">
+  <div class="centered-box">
+    <h1>🔒 Verrouillé</h1>
+    <p class="muted">Suivi Patients HDJ</p>
+    <form id="form-unlock">
+      <input type="password" inputmode="numeric" pattern="[0-9]*" id="unlock-pin" placeholder="Code PIN" required autocomplete="current-password" autofocus>
+      <p class="error-message" id="unlock-error"></p>
+      <button type="submit" class="btn-primary">Déverrouiller</button>
+    </form>
+  </div>
+</section>
+
+<!-- Écran liste des patients -->
+<section id="screen-list" class="screen">
+  <header class="app-header">
+    <h1>Patients HDJ</h1>
+    <button id="btn-settings" class="icon-btn" aria-label="Réglages">⚙️</button>
+  </header>
+  <div class="list-toolbar">
+    <input type="search" id="search-input" placeholder="Rechercher un nom...">
+    <select id="sort-select">
+      <option value="admissionDesc">Admission (récent → ancien)</option>
+      <option value="admissionAsc">Admission (ancien → récent)</option>
+      <option value="nameAsc">Nom (A → Z)</option>
+      <option value="nameDesc">Nom (Z → A)</option>
+    </select>
+  </div>
+  <ul id="patient-list" class="patient-list"></ul>
+  <p id="empty-state" class="muted centered-text" hidden>Aucun patient enregistré.</p>
+  <button id="btn-add-patient" class="fab" aria-label="Ajouter un patient">+</button>
+</section>
+
+<!-- Écran fiche patient (ajout / édition) -->
+<section id="screen-patient" class="screen">
+  <header class="app-header">
+    <button id="btn-back-to-list" class="icon-btn" aria-label="Retour">←</button>
+    <h1 id="patient-form-title">Nouveau patient</h1>
+    <button id="btn-delete-patient" class="icon-btn danger" aria-label="Supprimer" hidden>🗑️</button>
+  </header>
+
+  <form id="form-patient">
+    <fieldset>
+      <legend>Identification</legend>
+      <label for="field-lastName">Nom</label>
+      <input type="text" id="field-lastName" required>
+      <label for="field-firstName">Prénom</label>
+      <input type="text" id="field-firstName" required>
+      <label for="field-admissionDate">Date d'admission en HDJ</label>
+      <input type="date" id="field-admissionDate" required>
+    </fieldset>
+
+    <fieldset>
+      <legend>Antécédents</legend>
+      <label for="field-medicalHistory">Antécédents médicaux</label>
+      <textarea id="field-medicalHistory" rows="3" placeholder="Texte libre"></textarea>
+      <label for="field-surgicalHistory">Antécédents chirurgicaux</label>
+      <textarea id="field-surgicalHistory" rows="3" placeholder="Texte libre"></textarea>
+    </fieldset>
+
+    <fieldset>
+      <legend>Fragilités</legend>
+      <label class="checkbox-line"><input type="checkbox" id="field-fragile-denutrition"> Dénutrition</label>
+      <label class="checkbox-line"><input type="checkbox" id="field-fragile-chute"> Risque de chute</label>
+      <label class="checkbox-line"><input type="checkbox" id="field-fragile-cognitif"> Troubles cognitifs</label>
+      <label for="field-fragile-autonomie">Autonomie</label>
+      <select id="field-fragile-autonomie">
+        <option value="">Non précisé</option>
+        <option value="autonome">Autonome</option>
+        <option value="partielle">Autonomie partielle</option>
+        <option value="dependant">Dépendant</option>
+      </select>
+      <label for="field-fragile-autre">Autres fragilités</label>
+      <textarea id="field-fragile-autre" rows="2" placeholder="Texte libre"></textarea>
+    </fieldset>
+
+    <fieldset>
+      <legend>Objectifs de rééducation</legend>
+      <textarea id="field-rehabGoals" rows="3" placeholder="Texte libre"></textarea>
+    </fieldset>
+
+    <button type="submit" class="btn-primary">Enregistrer</button>
+  </form>
+
+  <section id="notes-section" hidden>
+    <h2>Notes de suivi</h2>
+    <div class="add-note">
+      <textarea id="new-note-text" rows="2" placeholder="Ajouter une observation..."></textarea>
+      <button id="btn-add-note" class="btn-secondary">Ajouter</button>
+    </div>
+    <ul id="notes-list" class="notes-list"></ul>
+  </section>
+</section>
+
+<!-- Écran réglages -->
+<section id="screen-settings" class="screen">
+  <header class="app-header">
+    <button id="btn-back-from-settings" class="icon-btn" aria-label="Retour">←</button>
+    <h1>Réglages</h1>
+  </header>
+
+  <div class="settings-block">
+    <h2>Verrouillage automatique</h2>
+    <label for="autolock-select">Verrouiller après inactivité</label>
+    <select id="autolock-select">
+      <option value="1">1 minute</option>
+      <option value="5">5 minutes</option>
+      <option value="15">15 minutes</option>
+      <option value="30">30 minutes</option>
+    </select>
+  </div>
+
+  <div class="settings-block">
+    <h2>Code PIN</h2>
+    <form id="form-change-pin">
+      <label for="change-pin-current">Code PIN actuel</label>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" id="change-pin-current" required autocomplete="current-password">
+      <label for="change-pin-new">Nouveau code PIN</label>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" id="change-pin-new" required minlength="4" maxlength="8" autocomplete="new-password">
+      <p class="error-message" id="change-pin-error"></p>
+      <p class="success-message" id="change-pin-success"></p>
+      <button type="submit" class="btn-secondary">Changer le code PIN</button>
+    </form>
+  </div>
+
+  <div class="settings-block">
+    <h2>Sauvegarde</h2>
+    <p class="muted">Export/import manuel uniquement. Aucune donnée n'est jamais envoyée automatiquement.</p>
+    <button id="btn-export" class="btn-secondary">Exporter une sauvegarde</button>
+    <label for="import-file" class="btn-secondary file-label">Importer une sauvegarde</label>
+    <input type="file" id="import-file" accept="application/json" hidden>
+    <p class="error-message" id="import-error"></p>
+    <p class="success-message" id="import-success"></p>
+  </div>
+
+  <div class="settings-block">
+    <button id="btn-lock-now" class="btn-secondary">Verrouiller maintenant</button>
+  </div>
+</section>
+
+<!-- Boîte de confirmation générique -->
+<div id="confirm-overlay" class="overlay" hidden>
+  <div class="confirm-box">
+    <p id="confirm-message"></p>
+    <div class="confirm-actions">
+      <button id="confirm-cancel" class="btn-secondary">Annuler</button>
+      <button id="confirm-ok" class="btn-danger">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/db.js"></script>
+<script src="js/crypto-utils.js"></script>
+<script src="js/lock.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
