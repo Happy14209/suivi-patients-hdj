@@ -3,6 +3,7 @@ const Lock = {
   _unlocked: false,
   _inactivityTimer: null,
   _onLockCallback: null,
+  _hiddenAt: null,
 
   isUnlocked() {
     return this._unlocked;
@@ -37,11 +38,13 @@ const Lock = {
 
   unlock() {
     this._unlocked = true;
+    this._hiddenAt = null;
     this.resetInactivityTimer();
   },
 
   lock() {
     this._unlocked = false;
+    this._hiddenAt = null;
     clearTimeout(this._inactivityTimer);
     if (this._onLockCallback) this._onLockCallback();
   },
@@ -63,9 +66,21 @@ const Lock = {
     ['click', 'keydown', 'touchstart', 'scroll', 'input'].forEach((evt) => {
       document.addEventListener(evt, reset, { passive: true });
     });
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden' && this._unlocked) {
-        this.lock();
+    document.addEventListener('visibilitychange', async () => {
+      if (!this._unlocked) return;
+      if (document.visibilityState === 'hidden') {
+        this._hiddenAt = Date.now();
+        clearTimeout(this._inactivityTimer);
+      } else if (document.visibilityState === 'visible' && this._hiddenAt != null) {
+        const elapsedMs = Date.now() - this._hiddenAt;
+        this._hiddenAt = null;
+        const settings = await DB.getSettings();
+        const minutes = settings.autoLockMinutes || 5;
+        if (elapsedMs >= minutes * 60 * 1000) {
+          this.lock();
+        } else {
+          this.resetInactivityTimer();
+        }
       }
     });
   },
