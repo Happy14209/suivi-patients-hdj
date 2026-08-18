@@ -1,6 +1,6 @@
 // Cache l'app shell pour un fonctionnement hors-ligne. Aucune donnée patient ne transite ici
 // (les patients vivent uniquement dans IndexedDB, jamais interceptés par le service worker).
-const CACHE_NAME = 'hdj-app-shell-v1';
+const CACHE_NAME = 'hdj-app-shell-v2';
 const APP_SHELL = [
   './',
   './index.html',
