@@ -350,6 +350,9 @@ legend {
   z-index: 20;
   padding: 20px;
 }
+.overlay[hidden] {
+  display:none;
+}
 
 .confirm-box {
   background: var(--color-surface);
