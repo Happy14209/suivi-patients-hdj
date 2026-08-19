@@ -103,21 +103,9 @@ const App = {
       li.className = 'patient-card';
       li.dataset.id = p.id;
 
-      const tags = [];
-      if (p.fragilities) {
-        if (p.fragilities.denutrition) tags.push('Dénutrition');
-        if (p.fragilities.chute) tags.push('Risque de chute');
-        if (p.fragilities.cognitif) tags.push('Troubles cognitifs');
-        if (p.fragilities.autonomie) {
-          const labels = { autonome: 'Autonome', partielle: 'Autonomie partielle', dependant: 'Dépendant' };
-          tags.push(labels[p.fragilities.autonomie] || p.fragilities.autonomie);
-        }
-      }
-
       li.innerHTML = `
         <div class="patient-name">${this.escapeHtml(p.lastName)} ${this.escapeHtml(p.firstName)}</div>
         <div class="patient-meta">Admission : ${this.formatDate(p.admissionDate)}</div>
-        <div class="patient-tags">${tags.map((t) => `<span class="tag">${this.escapeHtml(t)}</span>`).join('')}</div>
       `;
       li.addEventListener('click', () => this.openPatient(p.id));
       ul.appendChild(li);
@@ -173,13 +161,27 @@ const App = {
     document.getElementById('field-admissionDate').value = p.admissionDate || '';
     document.getElementById('field-medicalHistory').value = p.medicalHistory || '';
     document.getElementById('field-surgicalHistory').value = p.surgicalHistory || '';
-    const f = p.fragilities || {};
-    document.getElementById('field-fragile-denutrition').checked = !!f.denutrition;
-    document.getElementById('field-fragile-chute').checked = !!f.chute;
-    document.getElementById('field-fragile-cognitif').checked = !!f.cognitif;
-    document.getElementById('field-fragile-autonomie').value = f.autonomie || '';
-    document.getElementById('field-fragile-autre').value = f.autre || '';
+    document.getElementById('field-fragilities').value = this.fragilitiesToText(p.fragilities);
+    const evaluation = p.evaluation || {};
+    document.getElementById('field-eval-force').value = evaluation.force || '';
+    document.getElementById('field-eval-equilibre').value = evaluation.equilibre || '';
+    document.getElementById('field-eval-marche').value = evaluation.marche || '';
+    document.getElementById('field-eval-autres').value = evaluation.autres || '';
     document.getElementById('field-rehabGoals').value = p.rehabGoals || '';
+  },
+
+  // Compatibilité avec d'anciennes fiches où les fragilités étaient des cases à cocher.
+  fragilitiesToText(fragilities) {
+    if (!fragilities) return '';
+    if (typeof fragilities === 'string') return fragilities;
+    const lines = [];
+    if (fragilities.denutrition) lines.push('Dénutrition');
+    if (fragilities.chute) lines.push('Risque de chute');
+    if (fragilities.cognitif) lines.push('Troubles cognitifs');
+    const labels = { autonome: 'Autonome', partielle: 'Autonomie partielle', dependant: 'Dépendant' };
+    if (fragilities.autonomie) lines.push(labels[fragilities.autonomie] || fragilities.autonomie);
+    if (fragilities.autre) lines.push(fragilities.autre);
+    return lines.join('\n');
   },
 
   readForm() {
@@ -189,12 +191,12 @@ const App = {
       admissionDate: document.getElementById('field-admissionDate').value,
       medicalHistory: document.getElementById('field-medicalHistory').value.trim(),
       surgicalHistory: document.getElementById('field-surgicalHistory').value.trim(),
-      fragilities: {
-        denutrition: document.getElementById('field-fragile-denutrition').checked,
-        chute: document.getElementById('field-fragile-chute').checked,
-        cognitif: document.getElementById('field-fragile-cognitif').checked,
-        autonomie: document.getElementById('field-fragile-autonomie').value,
-        autre: document.getElementById('field-fragile-autre').value.trim(),
+      fragilities: document.getElementById('field-fragilities').value.trim(),
+      evaluation: {
+        force: document.getElementById('field-eval-force').value.trim(),
+        equilibre: document.getElementById('field-eval-equilibre').value.trim(),
+        marche: document.getElementById('field-eval-marche').value.trim(),
+        autres: document.getElementById('field-eval-autres').value.trim(),
       },
       rehabGoals: document.getElementById('field-rehabGoals').value.trim(),
       notes: this.currentPatientNotes,
